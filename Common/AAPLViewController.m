@@ -6,16 +6,12 @@ Copyright © 2017 Evgeny Baskakov. All Rights Reserved.
 #import "AAPLTopViewController.h"
 #import "AAPLRenderer.h"
 
-#if TARGET_OS_IOS || TARGET_OS_TV
-#import "DRColorPicker.h"
-#endif
-
 @import Metal;
 @import simd;
 @import MetalKit;
 
 #if TARGET_OS_IOS || TARGET_OS_TV
-@interface AAPLViewController () <UINavigationControllerDelegate, UIImagePickerControllerDelegate>
+@interface AAPLViewController ()
 @property (weak, nonatomic) IBOutlet UIToolbar *toolbar;
 @property (weak, nonatomic) IBOutlet UIBarButtonItem *space1;
 @property (weak, nonatomic) IBOutlet UIBarButtonItem *backButton;
@@ -26,14 +22,11 @@ Copyright © 2017 Evgeny Baskakov. All Rights Reserved.
 @property (weak, nonatomic) IBOutlet UIBarButtonItem *space4;
 @property (weak, nonatomic) IBOutlet UIBarButtonItem *redoButton;
 @property (weak, nonatomic) IBOutlet UIBarButtonItem *space5;
-@property (weak, nonatomic) IBOutlet UIBarButtonItem *paletteButton;
-@property (weak, nonatomic) IBOutlet UIBarButtonItem *space6;
 @property (weak, nonatomic) IBOutlet UIBarButtonItem *flameButton;
-@property (weak, nonatomic) IBOutlet UIBarButtonItem *space7;
+@property (weak, nonatomic) IBOutlet UIBarButtonItem *space6;
 @property (weak, nonatomic) IBOutlet UIBarButtonItem *sparkButton;
-@property (weak, nonatomic) IBOutlet UIBarButtonItem *space8;
-@property (nonatomic, strong) DRColorPickerColor* color;
-@property (nonatomic, weak) DRColorPickerViewController* colorPickerVC;
+@property (weak, nonatomic) IBOutlet UIBarButtonItem *space7;
+@property (weak, nonatomic) IBOutlet UIBarButtonItem *paletteButton;
 #else
 @interface AAPLViewController ()
 #endif
@@ -53,7 +46,6 @@ Copyright © 2017 Evgeny Baskakov. All Rights Reserved.
     UIImage *_flameImage;
     UIImage *_sparkImage;
     UIImage *_paletteImage;
-    UIImage *_disabledPaletteImage;
 #endif
     NSMutableArray *_createToolbarItems;
     NSMutableArray *_playToolbarItems;
@@ -77,7 +69,6 @@ Copyright © 2017 Evgeny Baskakov. All Rights Reserved.
     _flameImage = [[UIImage imageNamed:@"flame"] imageWithRenderingMode:UIImageRenderingModeAlwaysOriginal];
     _sparkImage = [[UIImage imageNamed:@"spark"] imageWithRenderingMode:UIImageRenderingModeAlwaysOriginal];
     _paletteImage = [[UIImage imageNamed:@"palette"] imageWithRenderingMode:UIImageRenderingModeAlwaysOriginal];
-    _disabledPaletteImage = [UIImage imageNamed:@"palette"];
     
     _createToolbarItems = [NSMutableArray arrayWithCapacity:15];
     
@@ -90,12 +81,11 @@ Copyright © 2017 Evgeny Baskakov. All Rights Reserved.
     [_createToolbarItems addObject:_space4];
     [_createToolbarItems addObject:_redoButton];
     [_createToolbarItems addObject:_space5];
-    [_createToolbarItems addObject:_paletteButton];
-    [_createToolbarItems addObject:_space6];
     [_createToolbarItems addObject:_flameButton];
+    [_createToolbarItems addObject:_space6];
+    [_createToolbarItems addObject:_paletteButton];
     [_createToolbarItems addObject:_space7];
     [_createToolbarItems addObject:_sparkButton];
-    [_createToolbarItems addObject:_space8];
 
     _playToolbarItems = [NSMutableArray arrayWithCapacity:5];
     
@@ -110,9 +100,8 @@ Copyright © 2017 Evgeny Baskakov. All Rights Reserved.
     _undoButton.image = _undoImage;
     _redoButton.image = _redoImage;
     _flameButton.image = _flameImage;
+    _paletteButton.image = _paletteImage;
     _sparkButton.image = _sparkImage;
-    _paletteButton.image = _disabledPaletteImage;
-    _paletteButton.tintColor = [UIColor grayColor];
 
     _toolbar.hidden = YES;
     
@@ -139,10 +128,11 @@ Copyright © 2017 Evgeny Baskakov. All Rights Reserved.
     
     [_renderer show:_persistentDraw];
     
+    // Set red color for pencil mode
+    _renderer.pencilColor = [UIColor redColor];
+    
     _toolbar.hidden = NO;
     _metalView.hidden = NO;
-    
-    _paletteButton.enabled = (_renderer.pencilMode ? true : false);
 #endif
 }
 
@@ -254,30 +244,43 @@ Copyright © 2017 Evgeny Baskakov. All Rights Reserved.
     [_renderer redo];
 }
 
-- (IBAction)paletteAction:(id)sender {
-    [self showColorPicker];
-}
-
 - (IBAction)flameAction:(id)sender {
     NSAssert(_persistentDraw, @"only can change flame mode in persistent mode");
     
     if(_renderer.pencilMode) {
         _flameButton.image = _flameImage;
-        _paletteButton.image = _disabledPaletteImage;
-        _paletteButton.tintColor = [UIColor grayColor];
         _renderer.pencilMode = false;
-        _paletteButton.enabled = false;
     }
     else {
         _flameButton.image = _pencilImage;
-        _paletteButton.image = _paletteImage;
         _renderer.pencilMode = true;
-        _paletteButton.enabled = true;
+        // Set red color when switching to pencil mode
+        _renderer.pencilColor = [UIColor redColor];
     }
 }
 
 - (IBAction)sparkAction:(id)sender {
     [_renderer shakeFlame];
+}
+
+- (IBAction)paletteAction:(id)sender {
+    // TODO: Implement color palette picker
+    // For now, cycle through some preset colors
+    static int colorIndex = 0;
+    NSArray *colors = @[
+        [UIColor redColor],
+        [UIColor orangeColor],
+        [UIColor yellowColor],
+        [UIColor greenColor],
+        [UIColor blueColor],
+        [UIColor purpleColor],
+        [UIColor magentaColor]
+    ];
+    
+    if (_renderer.pencilMode) {
+        colorIndex = (colorIndex + 1) % colors.count;
+        _renderer.pencilColor = colors[colorIndex];
+    }
 }
 
 #endif
@@ -366,150 +369,6 @@ Copyright © 2017 Evgeny Baskakov. All Rights Reserved.
         [_renderer shakeFlame];
     }
 }
-#endif
-
-#if TARGET_OS_IOS || TARGET_OS_TV
-
-#pragma mark - Color picker interaction
-
-- (void)showColorPicker
-{
-    // Setup the color picker - this only has to be done once, but can be called again and again if the values need to change while the app runs
-    //    DRColorPickerThumbnailSizeInPointsPhone = 44.0f; // default is 42
-    //    DRColorPickerThumbnailSizeInPointsPad = 44.0f; // default is 54
-    
-    // REQUIRED SETUP....................
-    // background color of each view
-    DRColorPickerBackgroundColor = [UIColor colorWithWhite:1.0f alpha:1.0f];
-    
-    // border color of the color thumbnails
-    DRColorPickerBorderColor = [UIColor blackColor];
-    
-    // font for any labels in the color picker
-    DRColorPickerFont = [UIFont systemFontOfSize:16.0f];
-    
-    // font color for labels in the color picker
-    DRColorPickerLabelColor = [UIColor blackColor];
-    // END REQUIRED SETUP
-    
-    // OPTIONAL SETUP....................
-    // max number of colors in the recent and favorites - default is 200
-    DRColorPickerStoreMaxColors = 200;
-    
-    // show a saturation bar in the color wheel view - default is NO
-    DRColorPickerShowSaturationBar = YES;
-    
-    // highlight the last hue in the hue view - default is NO
-    DRColorPickerHighlightLastHue = YES;
-    
-    // use JPEG2000, not PNG which is the default
-    // *** WARNING - NEVER CHANGE THIS ONCE YOU RELEASE YOUR APP!!! ***
-    DRColorPickerUsePNG = NO;
-    
-    // JPEG2000 quality default is 0.9, which really reduces the file size but still keeps a nice looking image
-    // *** WARNING - NEVER CHANGE THIS ONCE YOU RELEASE YOUR APP!!! ***
-    DRColorPickerJPEG2000Quality = 0.9f;
-    
-    // set to your shared app group to use the same color picker settings with multiple apps and extensions
-    DRColorPickerSharedAppGroup = nil;
-    // END OPTIONAL SETUP
-    
-    // Set initial color.
-    if(self.color == nil) {
-        self.color = [[DRColorPickerColor alloc] initWithColor:[UIColor whiteColor]];
-    }
-    
-    // create the color picker
-    DRColorPickerViewController* vc = [DRColorPickerViewController newColorPickerWithColor:self.color];
-    vc.modalPresentationStyle = UIModalPresentationFormSheet;
-    vc.rootViewController.showAlphaSlider = YES; // default is YES, set to NO to hide the alpha slider
-    
-    NSInteger theme = 0; // 0 = default, 1 = dark, 2 = light
-    
-    // in addition to the default images, you can set the images for a light or dark navigation bar / toolbar theme, these are built-in to the color picker bundle
-    if (theme == 0)
-    {
-        // setting these to nil (the default) tells it to use the built-in default images
-        vc.rootViewController.addToFavoritesImage = nil;
-        vc.rootViewController.favoritesImage = nil;
-        vc.rootViewController.hueImage = nil;
-        vc.rootViewController.wheelImage = nil;
-        vc.rootViewController.importImage = nil;
-    }
-    else if (theme == 1)
-    {
-        vc.rootViewController.addToFavoritesImage = DRColorPickerImage(@"images/dark/drcolorpicker-addtofavorites-dark.png");
-        vc.rootViewController.favoritesImage = DRColorPickerImage(@"images/dark/drcolorpicker-favorites-dark.png");
-        vc.rootViewController.hueImage = DRColorPickerImage(@"images/dark/drcolorpicker-hue-v3-dark.png");
-        vc.rootViewController.wheelImage = DRColorPickerImage(@"images/dark/drcolorpicker-wheel-dark.png");
-        vc.rootViewController.importImage = DRColorPickerImage(@"images/dark/drcolorpicker-import-dark.png");
-    }
-    else if (theme == 2)
-    {
-        vc.rootViewController.addToFavoritesImage = DRColorPickerImage(@"images/light/drcolorpicker-addtofavorites-light.png");
-        vc.rootViewController.favoritesImage = DRColorPickerImage(@"images/light/drcolorpicker-favorites-light.png");
-        vc.rootViewController.hueImage = DRColorPickerImage(@"images/light/drcolorpicker-hue-v3-light.png");
-        vc.rootViewController.wheelImage = DRColorPickerImage(@"images/light/drcolorpicker-wheel-light.png");
-        vc.rootViewController.importImage = DRColorPickerImage(@"images/light/drcolorpicker-import-light.png");
-    }
-    
-    // assign a weak reference to the color picker, need this for UIImagePickerController delegate
-    self.colorPickerVC = vc;
-    
-    // make an import block, this allows using images as colors, this import block uses the UIImagePickerController,
-    // but in You Doodle for iOS, I have a more complex import that allows importing from many different sources
-    // *** Leave this as nil to not allowing import of textures ***//    vc.rootViewController.importBlock = ^(UINavigationController* navVC, DRColorPickerHomeViewController* rootVC, NSString* title)
-//    {
-//        UIImagePickerController* p = [[UIImagePickerController alloc] init];
-//        p.delegate = self;
-//        p.modalPresentationStyle = UIModalPresentationCurrentContext;
-//        [self.colorPickerVC presentViewController:p animated:YES completion:nil];
-//    };
-    
-    // dismiss the color picker
-    vc.rootViewController.dismissBlock = ^(BOOL cancel)
-    {
-        [self dismissViewControllerAnimated:YES completion:nil];
-    };
-    
-    // a color was selected, do something with it, but do NOT dismiss the color picker, that happens in the dismissBlock
-    vc.rootViewController.colorSelectedBlock = ^(DRColorPickerColor* color, DRColorPickerBaseViewController* vc)
-    {
-        self.color = color;
-        
-        if (color.rgbColor == nil)
-        {
-            _renderer.pencilColor = [UIColor colorWithPatternImage:color.image];
-        }
-        else
-        {
-            _renderer.pencilColor = color.rgbColor;
-        }
-    };
-    
-    // finally, present the color picker
-    [self presentViewController:vc animated:YES completion:nil];
-}
-
-- (void) imagePickerController:(UIImagePickerController*)picker didFinishPickingMediaWithInfo:(NSDictionary*)info
-{
-    // get the image
-    UIImage *img = [info objectForKey:UIImagePickerControllerEditedImage];
-    if(!img) img = [info objectForKey:UIImagePickerControllerOriginalImage];
-    
-    // tell the color picker to finish importing
-    [self.colorPickerVC.rootViewController finishImport:img];
-    
-    // dismiss the image picker
-    [self.colorPickerVC dismissViewControllerAnimated:YES completion:nil];
-}
-
-- (void) imagePickerControllerDidCancel:(UIImagePickerController*)picker
-{
-    // image picker cancel, just dismiss it
-    [self.colorPickerVC dismissViewControllerAnimated:YES completion:nil];
-}
-
 #endif
 
 @end

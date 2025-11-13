@@ -154,7 +154,6 @@
                         <outlet property="space5" destination="iTe-E4-8x9" id="8I7-4g-pr3"/>
                         <outlet property="space6" destination="461-T8-9zB" id="xkS-YB-JcN"/>
                         <outlet property="space7" destination="SQt-vY-Wa9" id="7d4-yA-4eB"/>
-                        <outlet property="space8" destination="ScR-jr-TsH" id="ttn-nT-2Jw"/>
                         <outlet property="sparkButton" destination="4i8-mc-VKe" id="Lbr-6s-w2A"/>
                         <outlet property="toolbar" destination="wyD-9o-ZTh" id="7H2-pA-oHu"/>
                         <outlet property="undoButton" destination="Fqi-Di-uCC" id="OpE-O2-oMt"/>

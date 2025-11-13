@@ -9,18 +9,7 @@
 #import "AAPLViewController.h"
 #import "AAPLTopViewController.h"
 
-#define kRealAdUnitID @""
-
-#define kIPhone1 @""
-#define kIPad1  @""
-
-#define kAdShowShortInterval 10
-#define kAdShowLongInterval (10 * 60)
-
 @interface AAPLTopViewController ()
-#if TARGET_OS_IOS || TARGET_OS_TV
-@property(nonatomic, strong) GADInterstitial *interstitial;
-#endif
 @end
 
 @implementation AAPLTopViewController {
@@ -29,13 +18,11 @@
     __weak IBOutlet UIButton *createButton;
     __weak IBOutlet UIButton *playButton;
     AAPLViewController *drawableViewController;
-    NSTimer *_adTimer;
 #endif
 }
 
 - (IBAction)createAction:(id)sender {
 #if TARGET_OS_IOS || TARGET_OS_TV
-    [self scheduleAd:kAdShowShortInterval];
     [drawableViewController show:YES];
     buttonBox.hidden = YES;
 #endif
@@ -43,7 +30,6 @@
 
 - (IBAction)playAction:(id)sender {
 #if TARGET_OS_IOS || TARGET_OS_TV
-    [self scheduleAd:kAdShowShortInterval];
     [drawableViewController show:NO];
     buttonBox.hidden = YES;
 #endif
@@ -88,7 +74,6 @@
 #pragma mark - Menu controls
 
 - (void)showMainMenu {
-    [_adTimer invalidate];
     buttonBox.hidden = NO;
 }
 
@@ -96,45 +81,6 @@
 
 - (BOOL)prefersStatusBarHidden {
     return YES;
-}
-
-#pragma mark - Google ad support
-
-- (void)scheduleAd:(NSTimeInterval)interval {
-    [_adTimer invalidate];
-    
-    _adTimer = [NSTimer scheduledTimerWithTimeInterval:interval
-                                               repeats:NO
-                                                 block:^(NSTimer *timer) {
-                                                     [self initializeAdScreen];
-                                                 }];
-}
-
-- (void)initializeAdScreen {
-    self.interstitial = [[GADInterstitial alloc] initWithAdUnitID:kRealAdUnitID];
-    self.interstitial.delegate = self;
-    GADRequest *request = [GADRequest request];
-#ifdef DEBUG
-    request.testDevices = @[ kIPhone1, kIPad1 ];
-#endif
-    [self.interstitial loadRequest:request];
-}
-
-- (void)interstitialDidReceiveAd:(GADInterstitial *)ad {
-    if(self.interstitial.isReady) {
-        [self.interstitial presentFromRootViewController:self];
-    }
-    else {
-        NSLog(@"Ad wasn't ready");
-    }
-}
-
-- (void)interstitialDidDismissScreen:(GADInterstitial *)ad {
-    self.interstitial = nil;
-
-    [self scheduleAd:kAdShowLongInterval];
-
-    [drawableViewController stopCurrentDrawing];
 }
 
 #endif

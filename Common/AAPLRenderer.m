@@ -12,7 +12,7 @@ Copyright © 2017 Evgeny Baskakov. All Rights Reserved.
 #import "NSBezierPath+BezierPathQuartzUtilities.h"
 #endif
 
-#define kDefaultPencilColor [UIColor whiteColor]
+#define kDefaultPencilColor [UIColor redColor]
 
 static const NSUInteger kTextureCount = 2;
 static const NSUInteger kPencilLineWidth = 4;
@@ -785,19 +785,20 @@ static const packed_float4 colorMap[] = {
 }
 
 - (void)initActivationPointBuffer {
-    NSUInteger pageSize = getpagesize();
-    
-    _activationPointBufferDataLen = (sizeof(ushort) * _gridSize.width * _gridSize.height + pageSize - 1) & ~(pageSize - 1);
-    int result = posix_memalign((void**)&_activationPointBufferData, pageSize, _activationPointBufferDataLen);
-    if(result != 0) {
+    // Calculate buffer size based on grid dimensions
+    _activationPointBufferDataLen = sizeof(ushort) * _gridSize.width * _gridSize.height;
+
+    // Let Metal manage the memory allocation
+    _activationPointBuffer = [_device newBufferWithLength:_activationPointBufferDataLen
+                                                  options:MTLResourceCPUCacheModeDefaultCache | MTLResourceStorageModeShared];
+
+    if(_activationPointBuffer == nil) {
         NSLog(@"failed to allocate %lu bytes for _activationPointBuffer", (unsigned long)_activationPointBufferDataLen);
         abort();
     }
-    
-    _activationPointBuffer = [_device newBufferWithBytesNoCopy:_activationPointBufferData
-                                                        length:_activationPointBufferDataLen
-                                                       options:MTLResourceCPUCacheModeDefaultCache | MTLResourceStorageModeShared
-                                                   deallocator:nil];
+
+    // Get pointer to the buffer's contents for CPU access
+    _activationPointBufferData = (ushort*)[_activationPointBuffer contents];
 
     _activationPointBuffer.label = @"Activation Point Buffer";
 }

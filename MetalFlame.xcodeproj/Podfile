@@ -1,0 +1,19 @@
+# Uncomment the next line to define a global platform for your project
+platform :ios, '12.0'
+
+target 'MetalFlame iOS' do
+  # Pods for MetalFlame iOS
+  # No pods needed - all dependencies removed
+end
+
+target 'MetalFlame tvOS' do
+  platform :tvos, '12.0'
+  # Pods for MetalFlame tvOS
+  # No pods needed - all dependencies removed
+end
+
+target 'MetalFlame OSX' do
+  platform :osx, '10.13'
+  # Pods for MetalFlame OSX
+  # No pods needed - all dependencies removed
+end

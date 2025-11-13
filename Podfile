@@ -7,9 +7,6 @@ target 'MetalFlame iOS' do
 
   # Pods for MetalFlame iOS
 
-  pod 'Firebase/Core'
-  pod 'Firebase/Messaging'
-  pod 'Firebase/AdMob'
   
   pod 'DRColorPicker'
 end

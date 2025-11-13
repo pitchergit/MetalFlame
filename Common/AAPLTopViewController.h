@@ -9,9 +9,8 @@
 @import Foundation;
 
 #if TARGET_OS_IOS || TARGET_OS_TV
-@import GoogleMobileAds;
 @import UIKit;
-@interface AAPLTopViewController : UIViewController<GADInterstitialDelegate>
+@interface AAPLTopViewController : UIViewController
 - (void)showMainMenu;
 - (void)enableUndo;
 - (void)enableRedo;
